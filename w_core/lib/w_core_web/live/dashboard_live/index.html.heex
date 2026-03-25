@@ -1,0 +1,20 @@
+<div class="space-y-4">
+  <div>
+    <h1 class="text-xl font-semibold leading-tight">Dashboard em tempo real</h1>
+    <p class="text-sm text-base-content/70 mt-1">
+      Estado quente via ETS e atualizações incrementais via PubSub.
+    </p>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div :if={@node_ids == []} class="sm:col-span-2 lg:col-span-3 text-base-content/60">
+      Nenhuma máquina ainda. Assim que os sensores enviarem heartbeats, o painel atualiza.
+    </div>
+
+    <div :for={node_id <- @node_ids} id={"machine-#{node_id}"}>
+      <% machine = @machines[node_id] %>
+      <WCoreWeb.IndustrialComponents.machine_card node_id={node_id} status={machine.status} event_count={machine.event_count} />
+    </div>
+  </div>
+</div>
+

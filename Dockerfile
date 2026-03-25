@@ -3,7 +3,7 @@
 ##
 ## Build stage
 ##
-FROM hexpm/elixir:1.15.7-erlang-26.2.1-debian-bookworm-20250210 AS build
+FROM hexpm/elixir:1.15.7-erlang-26.2.5.10-debian-bookworm-20250929 AS build
 
 ENV MIX_ENV=prod
 WORKDIR /app
@@ -18,10 +18,14 @@ COPY config ./config
 COPY lib ./lib
 COPY rel ./rel
 COPY priv ./priv
+COPY assets ./assets
 
 # Fetch + compile
 RUN mix deps.get --only prod && mix deps.compile
 RUN mix compile
+
+# Build assets for production (digested)
+RUN mix assets.deploy
 
 # Release
 # DATABASE_PATH + SECRET_KEY_BASE are required at runtime; we provide build-time defaults

@@ -1,0 +1,22 @@
+services:
+  w_core:
+    build:
+      context: .
+    environment:
+      PHX_SERVER: "true"
+      PORT: "4000"
+      PHX_HOST: "localhost"
+      DATABASE_PATH: "/data/w_core.db"
+      # Precisa ter >= 64 bytes (Phoenix/Plug session cookie store).
+      # Você pode sobrescrever via `.env` (SECRET_KEY_BASE=...).
+      SECRET_KEY_BASE: "${SECRET_KEY_BASE:-wz3pJ2v4m0XQm6bQ0q8y2uQ7x1t7m9p3n5k8s2z4y6r8p0q2w4e6r8t0y2u4i6o8p0}"
+      # Evita warning de encoding/locale em alguns ambientes.
+      ELIXIR_ERL_OPTIONS: "+fnu"
+    ports:
+      - "4000:4000"
+    volumes:
+      - w_core_data:/data
+
+volumes:
+  w_core_data:
+

@@ -3,7 +3,10 @@ defmodule WCore.Telemetry.WriteBehindWorker do
 
   require Logger
 
+  import Ecto.Query, warn: false
+
   alias WCore.Repo
+  alias WCore.Telemetry.Node
   alias WCore.Telemetry.NodeMetric
 
   @ets_table :w_core_telemetry_cache
@@ -60,6 +63,22 @@ defmodule WCore.Telemetry.WriteBehindWorker do
   end
 
   defp persist_rows(rows) do
+    # Mantém a semântica do desafio: nodes é o cadastro estático.
+    # Se chegar heartbeat para um node_id inexistente, o estado quente (ETS) funciona,
+    # mas a persistência em node_metrics deve respeitar FK e ser ignorada até o cadastro existir.
+    existing_node_ids =
+      rows
+      |> Enum.map(& &1.node_id)
+      |> then(fn ids ->
+        Repo.all(from n in Node, where: n.id in ^ids, select: n.id)
+      end)
+      |> MapSet.new()
+
+    rows = Enum.filter(rows, fn r -> MapSet.member?(existing_node_ids, r.node_id) end)
+
+    if rows == [] do
+      :ok
+    else
     # Upsert por node_id (unique_index no migration).
     #
     # Como event_count em ETS é cumulativo, o write-behind apenas projeta o estado atual
@@ -70,6 +89,7 @@ defmodule WCore.Telemetry.WriteBehindWorker do
       on_conflict: {:replace_all_except, [:id, :node_id, :user_id]},
       conflict_target: [:node_id]
     )
+    end
   rescue
     e ->
       Logger.error("Falha ao persistir metrics no SQLite: #{Exception.message(e)}")

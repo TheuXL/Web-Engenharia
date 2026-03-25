@@ -134,6 +134,78 @@ Acesse:
 
 ---
 
+## Como rodar com Docker (release)
+
+### Pré-requisitos
+
+- Docker + Docker Compose instalados (`docker` e `docker compose`)
+- Porta `4000` livre (ou ajuste o mapeamento no compose)
+
+### 1) Subir o projeto
+
+Na raiz do projeto:
+
+```bash
+docker compose up --build
+```
+
+O container sobe o release e já roda as migrations automaticamente (se necessário). O SQLite fica persistido no volume do Docker (`/data/w_core.db`).
+
+### 2) Abrir as páginas (registro / login / dashboard)
+
+Com o container rodando, abra:
+
+- Registro: `http://localhost:4000/users/register`
+- Login: `http://localhost:4000/users/log-in`
+- Dashboard (requer login): `http://localhost:4000/dashboard`
+
+Fluxo esperado:
+- Se você acessar `/dashboard` sem estar autenticado, você será redirecionado para `/users/log-in`.
+
+### 3) Criar um usuário (registro)
+
+1. Acesse `http://localhost:4000/users/register`
+2. Preencha **Email** e **Password**
+3. Envie o formulário
+
+Depois disso, você consegue fazer login normalmente.
+
+### 4) Fazer login
+
+1. Acesse `http://localhost:4000/users/log-in`
+2. Use o mesmo **Email** e **Password** do registro
+3. Envie o formulário
+
+Você será redirecionado e conseguirá acessar o dashboard.
+
+### 5) Teste rápido de rotas (smoke test)
+
+Este projeto inclui um script que:
+- builda a imagem
+- sobe um container numa **porta livre** automaticamente
+- valida `GET /users/log-in`, `GET /users/register`
+- valida que `GET /dashboard` (sem login) redireciona para `/users/log-in`
+
+```bash
+./scripts/docker_smoke_test.sh
+```
+
+Observação importante:
+- Se você estiver com `docker compose up` rodando na porta `4000`, o smoke test **não conflita**, porque ele escolhe uma porta aleatória livre.
+
+### 6) Configuração de `SECRET_KEY_BASE` (produção)
+
+O `SECRET_KEY_BASE` precisa ter **pelo menos 64 bytes**, senão o Plug/Phoenix retorna erro ao tentar usar sessão/cookies.
+
+No `docker-compose.yml` já existe um fallback seguro, mas para algo mais “prod”, você pode setar via variável:
+
+```bash
+export SECRET_KEY_BASE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
+docker compose up --build
+```
+
+---
+
 ## Deploy no Edge (release + Docker)
 
 No runtime do container:

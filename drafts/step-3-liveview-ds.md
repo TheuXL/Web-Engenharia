@@ -11,7 +11,7 @@ Dashboard em tempo real para operadores: leitura quente no ETS + updates increme
 ```mermaid
 graph LR
   ETS[ETS w_core_telemetry_cache] --> LV[LiveView - WCoreWeb.DashboardLive - mount/3]
-  PubSub[Phoenix.PubSub] -->|{:node_status, node_id, status}| LV
+  PubSub[Phoenix.PubSub] -->|node_status (node_id, status)| LV
   LV --> UI[Componentes HEEx - machine_card]
 ```
 

@@ -15,7 +15,7 @@ graph LR
   ETS --> Worker[GenServer periódico - WriteBehindWorker ~5s]
   Worker --> SQLite[SQLite - node_metrics]
 
-  Ingestor --> PubSub[PubSub - {:node_status, node_id, status}]
+  Ingestor --> PubSub[PubSub - node_status (node_id, status)]
 ```
 
 ---

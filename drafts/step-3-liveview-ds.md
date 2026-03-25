@@ -10,9 +10,9 @@ Dashboard em tempo real para operadores: leitura quente no ETS + updates increme
 
 ```mermaid
 graph LR
-  ETS[(ETS<br/>:w_core_telemetry_cache)] --> LV[LiveView<br/>WCoreWeb.DashboardLive<br/>mount/3]
+  ETS[ETS w_core_telemetry_cache] --> LV[LiveView - WCoreWeb.DashboardLive - mount/3]
   PubSub[Phoenix.PubSub] -->|{:node_status, node_id, status}| LV
-  LV --> UI[Componentes HEEx<br/>machine_card]
+  LV --> UI[Componentes HEEx - machine_card]
 ```
 
 ---
@@ -61,5 +61,15 @@ Isso evita que o dashboard dependa do tempo de resposta do SQLite para “piscar
 - `node_ids` fica estável (a lista só muda quando surge um novo `node_id`).
 - cards têm ids determinísticos no DOM (`machine-#{node_id}` no wrapper).
 - o PubSub envia payload mínimo (sem payload completo).
+
+---
+
+## Arquivos principais
+
+| Arquivo | Papel |
+|----------|-------|
+| `lib/w_core_web/live/dashboard_live.ex` | LiveView: snapshot inicial via ETS e atualização incremental via PubSub |
+| `lib/w_core_web/components/industrial_components.ex` | Componentes HEEx: cards/labels sem dependências pesadas |
+
 
 

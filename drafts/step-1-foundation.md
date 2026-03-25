@@ -10,13 +10,13 @@ Base do sistema: autenticação do operador + modelagem Ecto do domínio `Teleme
 
 ```mermaid
 graph LR
-  Op[Operador] -->|login/sessão| Auth[WCore.Accounts + Phoenix Auth]
-  Op -->|CRUD/consulta (contextos)| Telemetry[WCore.Telemetry (Ecto)]
-  Telemetry --> DB[(SQLite: w_core_dev.db)]
+  Op[Operador] -->|login e sessao| Auth[WCore.Accounts + Phoenix Auth]
+  Op -->|CRUD consulta| Telemetry[WCore.Telemetry Ecto]
+  Telemetry --> DB[SQLite w_core_dev.db]
 
-  subgraph "Telemetria (persistência)"
-    nodes[nodes<br/>sensor->máquina] --> DB
-    node_metrics[node_metrics<br/>estado consolidado] --> DB
+  subgraph Telemetria persistencia
+    nodes[nodes - sensor para maquina] --> DB
+    node_metrics[node_metrics - estado consolidado] --> DB
   end
 ```
 
@@ -66,6 +66,18 @@ Este passo prepara a divisão em camadas exigida pelo desafio:
 - **Persistência local previsível**: o histórico sobrevive a reinícios quando apontado para volume no container (Passo 5).
 - **Lock evitado indiretamente**: o gargalo clássico do DB por escrita síncrona será mitigado no Passo 2 com ETS + write-behind.
 - **Restrições do desafio**: sem Postgres/Redis (proibidos).
+
+---
+
+## Por que os `unique_index` importam
+
+O write-behind do Passo 2 precisa atualizar uma linha por sensor sem duplicar registros.
+Para isso, o SQLite deve conseguir resolver conflitos determinísticos:
+
+- `nodes.machine_identifier` com `unique_index`: garante que um “sensor físico” mapeie para a mesma máquina.
+- `node_metrics.node_id` com `unique_index`: permite `upsert`/`insert_all` com `conflict_target: [:node_id]` durante flush.
+
+Sem esses índices, o write-behind teria que fazer “lookup + update” (custo maior) ou acabaria gerando duplicidades.
 
 ---
 

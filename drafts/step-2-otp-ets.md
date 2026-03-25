@@ -10,12 +10,12 @@ Hot-path em memória com ETS e ingestão via GenServer, evitando lock do SQLite 
 
 ```mermaid
 graph LR
-  HB[Heartbeat de sensor] --> Ingestor[GenServer<br/>WCore.Telemetry.Ingestor]
-  Ingestor --> ETS[(ETS<br/>:w_core_telemetry_cache)]
-  ETS --> Worker[GenServer periódico<br/>WriteBehindWorker (~5s)]
-  Worker --> SQLite[(SQLite<br/>node_metrics)]
+  HB[Heartbeat de sensor] --> Ingestor[GenServer - WCore.Telemetry.Ingestor]
+  Ingestor --> ETS[ETS w_core_telemetry_cache]
+  ETS --> Worker[GenServer periódico - WriteBehindWorker ~5s]
+  Worker --> SQLite[SQLite - node_metrics]
 
-  Ingestor --> PubSub[PubSub<br/>{:node_status, node_id, status}]
+  Ingestor --> PubSub[PubSub - {:node_status, node_id, status}]
 ```
 
 ---
@@ -66,6 +66,16 @@ graph LR
 Trade-off:
 - DB muito lento pode aumentar writes repetidos (flushes sucessivos com o mesmo `node_id`).
 - Isso é aceitável porque preserva a propriedade mais crítica: manter o dashboard responsivo e consistente por leitura eventual.
+
+---
+
+## Invariantes de dados (formato ETS e consistência)
+
+- O registro ETS é uma tupla fixa por `node_id`:
+  - `{node_id, status, event_count, last_payload, timestamp}`
+- `event_count` é cumulativo no ETS e **não é resetado** a cada flush.
+- O worker persiste o estado atual (cumulativo) com upsert por `node_id`.
+- Timestamps são normalizados para `:utc_datetime` sem microsegundos (truncados para `:second`) para compatibilidade com SQLite/Ecto.
 
 ---
 

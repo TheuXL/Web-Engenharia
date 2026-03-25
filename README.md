@@ -10,14 +10,14 @@ Motor de estado mission-critical para plantas industriais: recebe heartbeats de 
 
 ```mermaid
 graph TB
-    S[Sensor / Edge Device] -->|heartbeat JSON| E[HTTP Endpoint<br/>POST /api/telemetry/ingest]
-    E -->|cast rápido| I[GenServer<br/>WCore.Telemetry.Ingestor]
-    I --> ETS[(ETS: :w_core_telemetry_cache)]
-    ETS -->|flush em lote| W[Worker assíncrono<br/>WCore.Telemetry.WriteBehindWorker]
-    W -->|upsert| DB[SQLite<br/>w_core.db (VOLUME)]
+    S[Sensor - Edge Device] -->|heartbeat JSON| E[HTTP Endpoint - POST api telemetry ingest]
+    E -->|cast rápido| I[GenServer - WCore.Telemetry.Ingestor]
+    I --> ETS[ETS w_core_telemetry_cache]
+    ETS -->|flush em lote| W[Worker assíncrono - WCore.Telemetry.WriteBehindWorker]
+    W -->|upsert| DB[SQLite - w_core.db VOLUME]
 
     I -->|{:node_status, node_id, status}| PubSub[Phoenix.PubSub]
-    PubSub --> LV[LiveView Dashboard<br/>WCoreWeb.DashboardLive]
+    PubSub --> LV[LiveView Dashboard - WCoreWeb.DashboardLive]
     LV --> R[Render incremental do card por máquina]
 ```
 
@@ -26,11 +26,11 @@ graph TB
 ## Estrutura do projeto
 
 ```
-w_core/
+./
 ├── Dockerfile
 ├── rel/
 │   └── env.sh.eex
-├── docs/drafts/
+├── drafts/
 │   ├── step-1-foundation.md
 │   ├── step-2-otp-ets.md
 │   ├── step-3-liveview-ds.md
@@ -62,6 +62,29 @@ w_core/
 |-------|------|-----------|------|
 | `POST` | `/api/telemetry/ingest` | Sensor/Edge Device | não (ingestão) |
 | `GET` | `/dashboard` | Operador da planta | sim (sessão gerada em `phx.gen.auth`) |
+
+---
+
+## Como enviar um heartbeat (simulação de sensor)
+
+Antes de enviar telemetria, o `node_id` precisa existir em `nodes` (tabela de sensores/máquinas).
+
+Exemplo (payload mínimo):
+
+```bash
+curl -X POST "http://localhost:4000/api/telemetry/ingest" \
+  -H "content-type: application/json" \
+  -d '{
+    "node_id": 1,
+    "status": "ok",
+    "payload": {},
+    "timestamp": "2026-03-25T14:00:00Z"
+  }'
+```
+
+Observações:
+- `timestamp` é opcional; se vier, o sistema normaliza para `:utc_datetime` sem microsegundos.
+- a ingestão é fire-and-forget (resposta `202 Accepted`), e a persistência no SQLite ocorre em lote.
 
 ---
 
@@ -101,7 +124,6 @@ Dashboard em tempo real:
 
 ```bash
 source ~/.asdf/asdf.sh
-cd w_core
 mix deps.get
 mix ecto.migrate
 mix phx.server
@@ -119,6 +141,6 @@ No runtime do container:
 - o release roda com `PHX_SERVER=true`
 
 Arquivos relevantes:
-- `w_core/Dockerfile`
-- `w_core/rel/env.sh.eex`
+- `Dockerfile`
+- `rel/env.sh.eex`
 

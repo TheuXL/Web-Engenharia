@@ -69,3 +69,12 @@ para permitir que o worker também utilize a conexão do sandbox do teste.
 |----------|------|
 | `test/w_core/telemetry_ingestor_load_test.exs` | carga concorrente + resiliência + sincronização eventual |
 
+---
+
+## Por que o teste usa polling
+
+O write-behind é assíncrono e só sincroniza o SQLite periodicamente (flush do `WriteBehindWorker`).
+Por isso o teste valida primeiro o estado no ETS (consistência imediata) e depois aguarda o SQLite “convergir” via polling.
+
+Essa abordagem evita flakiness e reflete o comportamento do sistema em produção (eventual consistency por design).
+

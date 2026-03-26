@@ -16,7 +16,7 @@ graph TB
     ETS -->|flush em lote| W[Worker assíncrono - WCore.Telemetry.WriteBehindWorker]
     W -->|upsert| DB[SQLite - w_core.db VOLUME]
 
-    I -->|node_status (node_id, status)| PubSub[Phoenix.PubSub]
+    I -->|"node_status (node_id, status)"| PubSub[Phoenix.PubSub]
     PubSub --> LV[LiveView Dashboard - WCoreWeb.DashboardLive]
     LV --> R[Render incremental do card por máquina]
 ```

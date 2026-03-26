@@ -53,4 +53,41 @@ flowchart LR
 | `rel/env.sh.eex` | defaults de runtime para Edge/container |
 | `lib/w_core/telemetry/write_behind_worker.ex` | flush periódico e upsert |
 
+---
+
+## Explicação detalhada do código (Step 5)
+
+### `Dockerfile` (multi-stage)
+- **Stage build**:
+  - instala toolchain de compilação;
+  - baixa deps (`mix deps.get`) e compila (`mix compile`);
+  - gera assets otimizados (`mix assets.deploy`);
+  - monta release (`mix release --overwrite`).
+- **Stage runtime**:
+  - usa imagem menor, só com libs necessárias para executar release;
+  - copia somente artefato final (`_build/prod/rel/w_core`);
+  - expõe porta `4000` e sobe com `bin/w_core start`.
+- Benefício: imagem final menor e mais segura (sem toolchain completa de build).
+
+### `rel/env.sh.eex`
+- Centraliza defaults de runtime para container/edge.
+- Garante variáveis mínimas:
+  - `PHX_SERVER=true` para subir endpoint HTTP no release;
+  - `DATABASE_PATH=/data/w_core.db` para persistência em volume;
+  - `SECRET_KEY_BASE` (deve ser forte em ambiente real).
+- Evita bootstrap quebrado por variável ausente ao iniciar release.
+
+### `docker-compose.yml` (operação local)
+- Define serviço `w_core` com build local, `ports` e volume persistente.
+- Injeta variáveis de ambiente de runtime de forma explícita.
+- Facilita reproduzir ambiente próximo ao edge com um único comando.
+
+### `scripts/docker_smoke_test.sh`
+- Automatiza verificação básica de deploy:
+  - build da imagem;
+  - subida de container em porta livre;
+  - teste das rotas de login/registro;
+  - validação de redirect da rota protegida `/dashboard`.
+- Serve como "gate" rápido para saber se release web está funcional.
+
 

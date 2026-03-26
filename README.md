@@ -95,6 +95,11 @@ Cria a ETS no boot (`:w_core_telemetry_cache`) e registra os processos do pipeli
 - `WCore.Telemetry.Ingestor`
 - `WCore.Telemetry.WriteBehindWorker`
 
+Explicação detalhada:
+- este módulo é o "ponto de montagem" da aplicação OTP; tudo que precisa viver continuamente vai para a árvore de supervisão.
+- criar a ETS aqui (e não dentro do `Ingestor`) garante que o estado quente sobreviva ao restart de um worker individual.
+- se `Ingestor` cair, o supervisor reinicia apenas ele; a tabela ETS continua acessível para leitura/escrita.
+
 ### `lib/w_core/telemetry/ingestor.ex`
 Hot-path de ingestão:
 - valida o formato do evento
@@ -102,21 +107,44 @@ Hot-path de ingestão:
 - atualiza campos quentes (status + último payload) com `:ets.insert/2`
 - publica apenas `{:node_status, node_id, status}` no PubSub
 
+Explicação detalhada:
+- `ingest/1` usa `GenServer.cast/2` para não bloquear o caller HTTP; por isso a API responde rápido mesmo sob pico.
+- `:ets.update_counter/4` evita race de contador, porque incrementa no próprio ETS de forma eficiente.
+- a decisão de publicar só `node_id + status` no PubSub reduz tráfego interno e evita render desnecessário no LiveView.
+- timestamp é normalizado para segundos para manter compatibilidade com `:utc_datetime` no SQLite.
+
 ### `lib/w_core/telemetry/write_behind_worker.ex`
 Persistência eventual:
 - a cada ~5s, faz `:ets.tab2list/1`
 - projeta em linhas compatíveis com `node_metrics`
 - faz upsert em lote com `Repo.insert_all/3` usando `conflict_target: [:node_id]`
 
+Explicação detalhada:
+- esse processo desacopla escrita de disco do caminho crítico de ingestão.
+- em vez de 1 write por evento, ele consolida o estado e grava em lote; isso reduz lock contention no SQLite.
+- `insert_all + on_conflict` implementa idempotência: a mesma máquina sempre converge para "último estado conhecido".
+- antes de persistir, filtra apenas `node_id` existentes em `nodes`, evitando violação de chave estrangeira.
+
 ### `lib/w_core_web/controllers/telemetry_ingest_controller.ex`
 Endpoint HTTP para simular sensores enviando JSON.
 Converte payload/`timestamp` para `DateTime` e chama `WCore.Telemetry.Ingestor.ingest/1`.
+
+Explicação detalhada:
+- essa controller é uma "borda" de entrada: valida/parsa dados externos para o formato interno do domínio.
+- em sucesso retorna `202 Accepted`, indicando processamento assíncrono (não garante persistência imediata no DB).
+- em payload inválido retorna `400 Bad Request`, protegendo a camada de ingestão de dados malformados.
 
 ### `lib/w_core_web/live/dashboard_live.ex` + `industrial_components.ex`
 Dashboard em tempo real:
 - `mount/3` carrega snapshot inicial da ETS
 - `handle_info/2` reage ao PubSub e atualiza apenas o card da máquina afetada
 - componentes HEEx mantêm o design sem dependências pesadas
+
+Explicação detalhada:
+- no `mount/3`, a tela nasce com o estado mais recente em memória, sem depender de consulta no SQLite.
+- no `handle_info/2`, o update é granular por `node_id`, reduzindo custo de diff/render do LiveView.
+- `machine_card/1` centraliza markup e regras visuais por status, evitando duplicação de HTML na página.
+- a rota é protegida por autenticação; sem sessão válida, o acesso é redirecionado para login.
 
 ---
 

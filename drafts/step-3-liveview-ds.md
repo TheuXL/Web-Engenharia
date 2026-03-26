@@ -71,5 +71,35 @@ Isso evita que o dashboard dependa do tempo de resposta do SQLite para “piscar
 | `lib/w_core_web/live/dashboard_live.ex` | LiveView: snapshot inicial via ETS e atualização incremental via PubSub |
 | `lib/w_core_web/components/industrial_components.ex` | Componentes HEEx: cards/labels sem dependências pesadas |
 
+---
+
+## Explicação detalhada do código (Step 3)
+
+### `lib/w_core_web/live/dashboard_live.ex`
+- `mount/3`:
+  - valida contexto de sessão (rota protegida no router);
+  - assina tópico PubSub da telemetria;
+  - carrega snapshot atual da ETS para evitar tela "vazia" na primeira renderização.
+- `handle_info/2`:
+  - recebe mensagem compacta do PubSub (`node_id`, `status`);
+  - consulta ETS para pegar `event_count` mais novo;
+  - atualiza apenas a entrada da máquina afetada no `assigns`.
+- Benefício: menor dif de DOM e melhor responsividade quando há muitos sensores.
+
+### `lib/w_core_web/components/industrial_components.ex`
+- Define `machine_card/1` como componente reutilizável.
+- Concentra regras visuais de status (classes, badges e semântica do card).
+- Mantém consistência visual do dashboard e simplifica manutenção da view.
+
+### Template HEEx do dashboard
+- Renderiza lista estável de máquinas com ids determinísticos por `node_id`.
+- IDs estáveis ajudam o LiveView a reconciliar patches sem remontar toda a árvore HTML.
+- A tela exibe feedback claro quando ainda não há heartbeat ("Nenhuma máquina ainda").
+
+### Router e autenticação no contexto de UI
+- `/dashboard` passa por `:require_authenticated_user`.
+- Usuário anônimo é redirecionado para login.
+- Usuário autenticado acessa atualização em tempo real sem polling no browser.
+
 
 

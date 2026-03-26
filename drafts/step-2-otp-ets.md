@@ -87,4 +87,31 @@ Trade-off:
 | `lib/w_core/telemetry/ingestor.ex` | ingestão (update_counter + insert) + PubSub incremental |
 | `lib/w_core/telemetry/write_behind_worker.ex` | flush periódico com `insert_all` + upsert |
 
+---
+
+## Explicação detalhada do código (Step 2)
+
+### `lib/w_core/application.ex`
+- Cria `:w_core_telemetry_cache` no boot para que o estado quente seja independente do ciclo de vida de um worker.
+- Declara `Ingestor` e `WriteBehindWorker` como filhos supervisionados.
+- Resultado prático: falha localizada vira restart localizado, sem derrubar o pipeline inteiro.
+
+### `lib/w_core/telemetry/ingestor.ex`
+- Recebe o evento e converte para formato canônico (`node_id`, `status`, `payload`, `timestamp`).
+- Incrementa contador cumulativo com `:ets.update_counter/4` e grava snapshot com `:ets.insert/2`.
+- Publica sinal mínimo no PubSub para notificar UI sem transportar payload pesado.
+- Como usa `cast`, o throughput aumenta porque o endpoint não fica esperando IO de banco.
+
+### `lib/w_core/telemetry/write_behind_worker.ex`
+- Em intervalo fixo, lê a ETS (`tab2list`) e transforma tuplas em linhas para persistência.
+- Usa `insert_all` com `on_conflict` para aplicar upsert por `node_id`.
+- Normaliza timestamps para segundos e atualiza `updated_at` a cada flush.
+- Filtra chaves inexistentes em `nodes` para manter integridade referencial e evitar erro de FK.
+
+### Fluxo ponta a ponta do Step 2
+- Sensor envia heartbeat -> endpoint chama `Ingestor.ingest/1`.
+- `Ingestor` atualiza memória e notifica UI quase em tempo real.
+- `WriteBehindWorker` consolida e persiste periodicamente no SQLite.
+- Com isso, leitura fica rápida (ETS) e persistência fica robusta (SQLite), cada camada no papel certo.
+
 

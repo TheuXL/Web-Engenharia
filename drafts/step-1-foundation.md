@@ -36,6 +36,12 @@ graph LR
      - `nodes.machine_identifier` com `unique_index` (resolução determinística “sensor -> máquina”)
      - `node_metrics.node_id` com `unique_index` (conflito resolvível por sensor para `upsert` no write-behind)
 
+3. **Base preparada para os próximos passos**
+   - Definição explícita de fronteiras:
+     - `Accounts`: segurança e sessão do operador
+     - `Telemetry`: domínio operacional de sensores e estado
+   - Essa separação permite evoluir ingestão/tempo real sem tocar no fluxo de autenticação.
+
 ---
 
 ## O que mudou na arquitetura
@@ -90,5 +96,29 @@ Sem esses índices, o write-behind teria que fazer “lookup + update” (custo 
 | `lib/w_core/telemetry/node_metric.ex` | Schema Ecto de `node_metrics` |
 | `priv/repo/migrations/*create_nodes*.exs` | `unique_index` em `machine_identifier` |
 | `priv/repo/migrations/*create_node_metrics*.exs` | `unique_index` em `node_id` |
+
+---
+
+## Explicação detalhada do código (Step 1)
+
+### `lib/w_core/telemetry.ex`
+- É a API de domínio da telemetria para o restante da aplicação.
+- Encapsula queries/CRUD, evitando que controller/liveview acessem `Repo` diretamente.
+- Isso reduz acoplamento e facilita testes, porque a regra de acesso aos dados fica centralizada.
+
+### `lib/w_core/telemetry/node.ex`
+- Modela o cadastro estático da máquina/sensor.
+- O `machine_identifier` único impede duplicidade semântica (mesmo equipamento cadastrado duas vezes).
+- Serve como referência para relacionamento de métricas (`node_metrics.node_id`).
+
+### `lib/w_core/telemetry/node_metric.ex`
+- Representa o estado consolidado mais recente por máquina.
+- Não é tabela de eventos históricos; é tabela de "último estado conhecido", ideal para leitura rápida de dashboard.
+- A chave única por `node_id` prepara o terreno para `upsert` no write-behind.
+
+### Migrações (`priv/repo/migrations/...`)
+- Definem estrutura e invariantes no próprio banco.
+- `unique_index` move garantia de consistência para a camada mais confiável (DB), evitando depender só de validação em código.
+- Em sistema concorrente, essa proteção no DB é essencial para evitar condições de corrida em gravações.
 
 

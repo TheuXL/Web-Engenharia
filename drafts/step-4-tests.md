@@ -78,3 +78,32 @@ Por isso o teste valida primeiro o estado no ETS (consistência imediata) e depo
 
 Essa abordagem evita flakiness e reflete o comportamento do sistema em produção (eventual consistency por design).
 
+---
+
+## Explicação detalhada do código de testes (Step 4)
+
+### `test/w_core/telemetry_ingestor_load_test.exs`
+- Organiza os cenários com foco em comportamento observável, não em implementação interna.
+- Em carga concorrente:
+  - dispara muitas ingestões em paralelo com `Task.async_stream`;
+  - confirma convergência do contador em ETS;
+  - confirma convergência eventual no SQLite.
+- Em resiliência:
+  - força queda do processo `Ingestor`;
+  - espera restart supervisionado;
+  - valida que o contador continua cumulativo.
+
+### Helpers de polling
+- Fazem retry com timeout total e intervalos curtos.
+- São necessários porque write-behind é temporal (depende da janela de flush).
+- Sem polling, o teste tende a ficar frágil e dependente de timing da máquina/CI.
+
+### Sandbox e processos concorrentes
+- O teste explicitamente permite acesso de processos filhos (`allow/3`) para o worker escrever no banco.
+- Isso evita falso negativo onde a lógica está correta, mas o processo secundário fica bloqueado pelo sandbox.
+
+### Resultado arquitetural validado
+- O hot-path mantém latência e não espera disco.
+- O sistema sobrevive a falhas parciais (restart de worker).
+- O estado final persiste de forma consistente no banco, respeitando o modelo eventual.
+

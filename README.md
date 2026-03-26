@@ -6,6 +6,18 @@ Motor de estado mission-critical para plantas industriais: recebe heartbeats de 
 
 ---
 
+## Onde estão os detalhes completos
+
+Este `README.md` traz uma visão consolidada do projeto. A explicação detalhada de arquitetura, código, decisões e trade-offs está nos documentos de evolução abaixo:
+
+- `drafts/step-1-foundation.md`
+- `drafts/step-2-otp-ets.md`
+- `drafts/step-3-liveview-ds.md`
+- `drafts/step-4-tests.md`
+- `drafts/step-5-infra-arch.md`
+
+---
+
 ## Arquitetura do sistema
 
 ```mermaid

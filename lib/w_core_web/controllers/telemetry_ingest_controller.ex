@@ -1,15 +1,6 @@
 defmodule WCoreWeb.TelemetryIngestController do
   use WCoreWeb, :controller
 
-  # Aceita um heartbeat JSON e encaminha para o Ingestor (ETS hot-path).
-  #
-  # Esperado (exemplo):
-  # {
-  #   "node_id": 123,
-  #   "status": "ok",
-  #   "payload": { "temp": 42.3 },
-  #   "timestamp": "2026-03-25T14:00:00Z"  // opcional
-  # }
   def ingest(conn, params) do
     with {:ok, node_id} <- parse_int(params["node_id"] || params[:node_id]),
          {:ok, status} <- parse_string(params["status"] || params[:status]),

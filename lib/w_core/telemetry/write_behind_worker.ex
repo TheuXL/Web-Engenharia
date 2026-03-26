@@ -46,15 +46,12 @@ defmodule WCore.Telemetry.WriteBehindWorker do
           total_events_processed: event_count,
           last_payload: last_payload,
           last_seen_at: last_seen_at,
-          # O desafio não especifica multi-tenancy; o esquema gerado inclui user_id,
-          # então mantemos como nil (permitido pelo SQLite).
           user_id: nil,
           inserted_at: now,
           updated_at: now
         }
       end)
 
-    # Evita batelada vazia.
     if rows == [] do
       :ok
     else
@@ -63,9 +60,6 @@ defmodule WCore.Telemetry.WriteBehindWorker do
   end
 
   defp persist_rows(rows) do
-    # Mantém a semântica do desafio: nodes é o cadastro estático.
-    # Se chegar heartbeat para um node_id inexistente, o estado quente (ETS) funciona,
-    # mas a persistência em node_metrics deve respeitar FK e ser ignorada até o cadastro existir.
     existing_node_ids =
       rows
       |> Enum.map(& &1.node_id)
@@ -79,10 +73,6 @@ defmodule WCore.Telemetry.WriteBehindWorker do
     if rows == [] do
       :ok
     else
-    # Upsert por node_id (unique_index no migration).
-    #
-    # Como event_count em ETS é cumulativo, o write-behind apenas projeta o estado atual
-    # para o SQLite; eventos futuros serão persistidos no próximo ciclo.
     Repo.insert_all(
       NodeMetric,
       rows,

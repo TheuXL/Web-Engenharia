@@ -21,7 +21,6 @@ defmodule WCoreWeb.Router do
     plug WCoreWeb.Plugs.EnsureMailboxEnabled
   end
 
-  # Endpoints do sensor/edge device.
   scope "/api", WCoreWeb do
     pipe_through :api
 
@@ -34,17 +33,10 @@ defmodule WCoreWeb.Router do
     get "/", PageController, :home
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", WCoreWeb do
-  #   pipe_through :api
-  # end
-
   scope "/dev" do
     pipe_through [:browser, :mailbox_enabled]
     forward "/mailbox", Plug.Swoosh.MailboxPreview
   end
-
-  ## Authentication routes
 
   scope "/", WCoreWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
@@ -70,7 +62,6 @@ defmodule WCoreWeb.Router do
     delete "/users/log-out", UserSessionController, :delete
   end
 
-  # Painel operacional em tempo real
   scope "/", WCoreWeb do
     pipe_through [:browser, :require_authenticated_user]
 

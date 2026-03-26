@@ -35,16 +35,10 @@ defmodule WCore.Telemetry.Ingestor do
       when is_integer(node_id) and is_binary(status) and is_map(payload) and is_struct(ts, DateTime) do
     ts = DateTime.truncate(ts, :second)
 
-    # Position layout in ETS tuple:
-    # {node_id, status, event_count, last_payload, last_seen_at}
-    #
-    # update_counter incrementa event_count (pos 3) sem precisar fazer lock explícito.
     new_count = :ets.update_counter(@ets_table, node_id, {3, 1}, {node_id, status, 0, payload, ts})
 
-    # Atualiza os campos quentes para refletir o "último estado conhecido".
     :ets.insert(@ets_table, {node_id, status, new_count, payload, ts})
 
-    # Payload completo é evitado: LiveView só precisa do id + status.
     Phoenix.PubSub.broadcast(WCore.PubSub, @pubsub_topic, {:node_status, node_id, status})
     {:noreply, state}
   end

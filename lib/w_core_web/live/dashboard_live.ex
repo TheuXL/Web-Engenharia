@@ -43,7 +43,6 @@ defmodule WCoreWeb.DashboardLive do
           {machines, new_node_ids}
 
         [] ->
-          # Em teoria a ETS deveria existir. Caso não exista (race rara), evitamos quebrar a UI.
           new_machine = %{status: status, event_count: 0}
           machines = Map.put(machines, node_id, new_machine)
           {machines, Enum.sort(node_ids ++ [node_id])}

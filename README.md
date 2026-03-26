@@ -10,11 +10,11 @@ Motor de estado mission-critical para plantas industriais: recebe heartbeats de 
 
 Este `README.md` traz uma visão consolidada do projeto. A explicação detalhada de arquitetura, código, decisões e trade-offs está nos documentos de evolução abaixo:
 
-- `drafts/step-1-foundation.md`
-- `drafts/step-2-otp-ets.md`
-- `drafts/step-3-liveview-ds.md`
-- `drafts/step-4-tests.md`
-- `drafts/step-5-infra-arch.md`
+- `drafts/step-1-foundation.md`: fundação do projeto (auth com `phx.gen.auth`, modelagem Ecto e índices únicos para consistência).
+- `drafts/step-2-otp-ets.md`: pipeline OTP/ETS de baixa latência (ingestão quente, contador cumulativo e write-behind para SQLite).
+- `drafts/step-3-liveview-ds.md`: dashboard em tempo real com LiveView, PubSub incremental e componentes HEEx semânticos.
+- `drafts/step-4-tests.md`: estratégia de testes de carga, concorrência, resiliência e consistência eventual.
+- `drafts/step-5-infra-arch.md`: empacotamento e operação com Docker + release, variáveis de runtime e persistência em volume.
 
 ---
 

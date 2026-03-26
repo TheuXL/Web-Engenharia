@@ -107,3 +107,22 @@ Essa abordagem evita flakiness e reflete o comportamento do sistema em produçã
 - O sistema sobrevive a falhas parciais (restart de worker).
 - O estado final persiste de forma consistente no banco, respeitando o modelo eventual.
 
+---
+
+## Estratégia de qualidade adotada
+
+- **Invariantes primeiro**: testes focam propriedades do sistema, não detalhe de implementação.
+- **Assíncrono explícito**: polling e timeouts tornam o comportamento eventual testável sem flakiness.
+- **Falha como cenário principal**: restart de processo supervisionado validado como caminho normal de operação.
+- **Concorrência realista**: `Task.async_stream` aproxima o comportamento de burst de sensores em produção.
+
+---
+
+## Possíveis melhorias e adaptações
+
+- **Teste de longa duração**: soak test para validar estabilidade por horas (leak, degradação, drift).
+- **Teste de caos em persistência**: simular DB lento/bloqueado e medir recuperação pós-normalização.
+- **Benchmarks repetíveis**: baseline de throughput/p95/p99 para comparação entre versões.
+- **Contract tests da API**: validação formal do payload de ingestão para versões futuras de sensor firmware.
+- **Matriz CI**: rodar testes em diferentes limites de CPU/memória para perfis edge variados.
+

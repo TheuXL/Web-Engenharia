@@ -101,5 +101,24 @@ Isso evita que o dashboard dependa do tempo de resposta do SQLite para “piscar
 - Usuário anônimo é redirecionado para login.
 - Usuário autenticado acessa atualização em tempo real sem polling no browser.
 
+---
+
+## Decisões de UX para operação industrial
+
+- **Leitura em bloco + destaque de anomalia**: cards priorizam status e volume de eventos para decisão rápida.
+- **Atualização incremental**: evita "piscar" da tela inteira e reduz fadiga visual do operador.
+- **Linguagem de estado**: termos curtos e sem ambiguidade (`ok`, `warning`, `critical`).
+- **Sem dependência de UI pesada**: HEEx puro mantém previsibilidade e menor superfície de falha.
+
+---
+
+## Possíveis melhorias e adaptações
+
+- **Filtros operacionais**: por status, setor, criticidade e intervalo temporal.
+- **Ordenação dinâmica**: priorizar automaticamente máquinas críticas no topo.
+- **Sinalização temporal**: mostrar "última atualização há Xs" por card.
+- **Acessibilidade**: contraste AA/AAA, atalhos de teclado e feedback não baseado só em cor.
+- **Modo NOC**: layout de parede (TV/monitor grande) com densidade e tipografia ajustadas.
+
 
 

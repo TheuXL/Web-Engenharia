@@ -31,7 +31,7 @@
     </script>
   </head>
   <body>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-6 sm:px-8 lg:px-12 justify-end">
       <%= if @current_scope do %>
         <li>
           {@current_scope.user.email}
@@ -51,6 +51,8 @@
         </li>
       <% end %>
     </ul>
-    {@inner_content}
+    <main class="mx-auto w-full max-w-7xl px-6 pb-8 pt-2 sm:px-8 lg:px-12">
+      {@inner_content}
+    </main>
   </body>
 </html>

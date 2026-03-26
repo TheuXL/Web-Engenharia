@@ -1,19 +1,67 @@
-<div class="space-y-4">
+<div class="space-y-6">
+  <section class="rounded-2xl border border-base-content/15 bg-gradient-to-br from-base-200/70 via-base-100 to-base-200/60 p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold leading-tight">Dashboard em tempo real</h1>
+        <p class="text-sm text-base-content/70 mt-1">
+          Estado quente via ETS e atualizações incrementais via PubSub.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div class="rounded-lg border border-base-content/10 bg-base-100/80 px-3 py-2">
+          <p class="text-[11px] uppercase tracking-wide text-base-content/55">Máquinas</p>
+          <p class="text-xl font-bold tabular-nums">{length(@node_ids)}</p>
+        </div>
+        <div class="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-3 py-2">
+          <p class="text-[11px] uppercase tracking-wide text-emerald-200/80">OK</p>
+          <p class="text-xl font-bold tabular-nums">
+            {Enum.count(@machines, fn {_id, m} -> m.status == "ok" end)}
+          </p>
+        </div>
+        <div class="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2">
+          <p class="text-[11px] uppercase tracking-wide text-amber-200/80">Warning</p>
+          <p class="text-xl font-bold tabular-nums">
+            {Enum.count(@machines, fn {_id, m} -> m.status == "warning" end)}
+          </p>
+        </div>
+        <div class="rounded-lg border border-rose-400/25 bg-rose-500/10 px-3 py-2">
+          <p class="text-[11px] uppercase tracking-wide text-rose-200/80">Crítico</p>
+          <p class="text-xl font-bold tabular-nums">
+            {Enum.count(@machines, fn {_id, m} -> m.status in ["critical", "error"] end)}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div>
-    <h1 class="text-xl font-semibold leading-tight">Dashboard em tempo real</h1>
-    <p class="text-sm text-base-content/70 mt-1">
+    <p class="text-xs uppercase tracking-[0.14em] text-base-content/55">
+      Mapa operacional das máquinas
+    </p>
+    <p class="text-sm text-base-content/70">
       Estado quente via ETS e atualizações incrementais via PubSub.
     </p>
   </div>
 
-  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    <div :if={@node_ids == []} class="sm:col-span-2 lg:col-span-3 text-base-content/60">
-      Nenhuma máquina ainda. Assim que os sensores enviarem heartbeats, o painel atualiza.
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div
+      :if={@node_ids == []}
+      class="sm:col-span-2 xl:col-span-3 rounded-xl border border-dashed border-base-content/20 bg-base-200/40 p-8 text-center text-base-content/70"
+    >
+      <p class="text-sm font-medium">Nenhuma máquina ainda.</p>
+      <p class="mt-1 text-xs text-base-content/60">
+        Assim que os sensores enviarem heartbeats, o painel atualiza automaticamente.
+      </p>
     </div>
 
     <div :for={node_id <- @node_ids} id={"machine-#{node_id}"}>
       <% machine = @machines[node_id] %>
-      <WCoreWeb.IndustrialComponents.machine_card node_id={node_id} status={machine.status} event_count={machine.event_count} />
+      <WCoreWeb.IndustrialComponents.machine_card
+        node_id={node_id}
+        status={machine.status}
+        event_count={machine.event_count}
+      />
     </div>
   </div>
 </div>

@@ -114,4 +114,24 @@ Trade-off:
 - `WriteBehindWorker` consolida e persiste periodicamente no SQLite.
 - Com isso, leitura fica rápida (ETS) e persistência fica robusta (SQLite), cada camada no papel certo.
 
+---
+
+## Decisões arquiteturais e por que funcionam
+
+- **GenServer no hot-path**: serializa atualização lógica e reduz risco de interleavings inconsistentes.
+- **ETS como camada transacional**: oferece latência baixa para escrita/leitura frequente por chave.
+- **Write-behind**: protege o SQLite de bursts de I/O, mantendo throughput sob picos.
+- **PubSub com payload mínimo**: comunica mudança sem transformar a malha interna em gargalo de rede/processo.
+- **Upsert por `node_id`**: garante convergência para o estado mais recente por máquina.
+
+---
+
+## Possíveis melhorias e adaptações
+
+- **Batch adaptativo**: reduzir/aumentar intervalo de flush conforme pressão de fila e latência do DB.
+- **Sharding de ingestão**: particionar por hash de `node_id` para múltiplos ingestors em cenários extremos.
+- **Circuit breaker de persistência**: desacoplar ainda mais quando o SQLite ficar temporariamente indisponível.
+- **Snapshots incrementais**: evitar `tab2list` total e persistir somente chaves alteradas desde o último flush.
+- **Telemetria operacional**: expor métricas de backlog, tempo de flush, taxa de ingestão e erro por status.
+
 

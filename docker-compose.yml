@@ -12,10 +12,42 @@ services:
       SECRET_KEY_BASE: "${SECRET_KEY_BASE:-wz3pJ2v4m0XQm6bQ0q8y2uQ7x1t7m9p3n5k8s2z4y6r8p0q2w4e6r8t0y2u4i6o8p0}"
       # Evita warning de encoding/locale em alguns ambientes.
       ELIXIR_ERL_OPTIONS: "+fnu"
+      # Habilita mailbox no serviço principal para o fluxo do avaliador.
+      ENABLE_MAILBOX: "true"
     ports:
       - "4000:4000"
     volumes:
       - w_core_data:/data
+
+  w_core_loadgen:
+    image: alpine:3.20
+    depends_on:
+      - w_core
+    environment:
+      TARGET_URL: "http://w_core:4000"
+      LOAD_INTERVAL_SECONDS: "0.20"
+    command: >
+      sh -lc '
+      apk add --no-cache curl >/dev/null &&
+      echo "[loadgen] aguardando WCore responder..." &&
+      until curl -fsS "$${TARGET_URL}/users/log-in" >/dev/null; do sleep 1; done &&
+      echo "[loadgen] iniciando envio contínuo de heartbeats" &&
+      i=0;
+      while true; do
+        node_id=$$(( (i % 12) + 1 ));
+        mod=$$(( i % 3 ));
+        if [ "$$mod" -eq 0 ]; then status="ok";
+        elif [ "$$mod" -eq 1 ]; then status="warning";
+        else status="critical"; fi;
+        ts=$$(date -u +"%Y-%m-%dT%H:%M:%SZ");
+        temp=$$(( 60 + (i % 35) ));
+        vib=$$(( 2 + (i % 9) ));
+        json=$$(printf "{\"node_id\":%s,\"status\":\"%s\",\"payload\":{\"temperature\":%s,\"vibration\":%s},\"timestamp\":\"%s\"}" "$$node_id" "$$status" "$$temp" "$$vib" "$$ts");
+        curl -sS -o /dev/null -X POST "$${TARGET_URL}/api/telemetry/ingest" -H "content-type: application/json" -d "$$json" || true;
+        i=$$(( i + 1 ));
+        sleep "$${LOAD_INTERVAL_SECONDS}";
+      done
+      '
 
 volumes:
   w_core_data:

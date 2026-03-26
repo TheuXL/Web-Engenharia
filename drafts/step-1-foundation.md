@@ -121,4 +121,23 @@ Sem esses índices, o write-behind teria que fazer “lookup + update” (custo 
 - `unique_index` move garantia de consistência para a camada mais confiável (DB), evitando depender só de validação em código.
 - Em sistema concorrente, essa proteção no DB é essencial para evitar condições de corrida em gravações.
 
+---
+
+## Como esta fundação funciona em runtime
+
+- Requisições web entram pelo `Router`, passam pelos plugs de sessão/csrf e chegam aos controllers/liveviews.
+- O contexto `Accounts` protege o perímetro de autenticação e autorização de páginas sensíveis.
+- O contexto `Telemetry` concentra operações de domínio e prepara a transição para o pipeline transacional em memória.
+- O SQLite opera como base durável, enquanto as regras de domínio permanecem na camada Elixir (contextos).
+
+---
+
+## Possíveis melhorias e adaptações
+
+- **Histórico de eventos**: adicionar tabela de eventos brutos para auditoria temporal completa.
+- **RBAC**: estender `Accounts` para papéis (operador, supervisor, admin) com políticas por rota/ação.
+- **Validações de domínio**: reforçar constraints de negócio (faixas de métricas, estado permitido por tipo de máquina).
+- **Multi-planta**: adicionar `plant_id` em `nodes` para isolamento lógico por unidade industrial.
+- **Migrações evolutivas**: estratégia de versionamento de schema sem downtime para edge clusters.
+
 

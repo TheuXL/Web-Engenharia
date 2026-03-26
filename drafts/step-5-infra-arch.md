@@ -90,4 +90,23 @@ flowchart LR
   - validação de redirect da rota protegida `/dashboard`.
 - Serve como "gate" rápido para saber se release web está funcional.
 
+---
+
+## Decisões de operação para o avaliador
+
+- **Compose com serviço principal**: um comando (`docker compose up --build`) para subir tudo.
+- **Mailbox acessível no runtime local**: confirmação de conta sem depender de SMTP externo.
+- **Load generator acoplado**: dashboard demonstra comportamento em tempo real sem setup manual extra.
+- **URL local previsível**: links e navegação em `http://localhost:4000` para evitar ambiguidades.
+
+---
+
+## Possíveis melhorias e adaptações
+
+- **Healthchecks explícitos**: adicionar probe HTTP para readiness/liveness no compose.
+- **Perfil de segurança**: remover defaults de segredo em produção real e usar secret manager.
+- **Observabilidade**: integração com OpenTelemetry + logs estruturados para diagnóstico edge.
+- **Escalonamento horizontal**: adaptar para múltiplas instâncias com PubSub distribuído e estratégia de coordenação.
+- **Build reprodutível**: pin de dependências e cache remoto para acelerar pipeline de release.
+
 

@@ -15,7 +15,7 @@ config :w_core, WCoreWeb.Endpoint,
     rewrite_on: [:x_forwarded_proto],
     exclude: [
       # paths: ["/health"],
-      hosts: ["localhost", "127.0.0.1"]
+      hosts: ["localhost", "127.0.0.1", "w_core"]
     ]
   ]
 

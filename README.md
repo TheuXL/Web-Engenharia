@@ -174,14 +174,14 @@ Acesse:
 
 ---
 
-## Como rodar com Docker (release)
+## Como rodar com Docker (serviço único)
 
 ### Pré-requisitos
 
 - Docker + Docker Compose instalados (`docker` e `docker compose`)
 - Porta `4000` livre (ou ajuste o mapeamento no compose)
 
-### 1) Subir o projeto
+### 1) Subir o projeto (um único comando)
 
 Na raiz do projeto:
 
@@ -189,28 +189,51 @@ Na raiz do projeto:
 docker compose up --build
 ```
 
-O container sobe o release e já roda as migrations automaticamente (se necessário). O SQLite fica persistido no volume do Docker (`/data/w_core.db`).
+Esse comando sobe dois serviços no mesmo compose:
+- `w_core`: aplicação principal (Phoenix release)
+- `w_core_loadgen`: simulador de sensores que envia heartbeats continuamente
 
-### 2) Abrir as páginas (registro / login / dashboard)
+Assim o dashboard já recebe eventos automaticamente, sem scripts extras.
+O SQLite fica persistido no volume Docker (`/data/w_core.db`).
+
+### Checklist rápido do avaliador (fluxo ponta a ponta)
+
+1. Subir o projeto com `docker compose up --build`.
+2. Abrir `http://localhost:4000/users/register` e criar uma conta.
+3. Abrir `http://localhost:4000/dev/mailbox` e localizar o e-mail de confirmação.
+4. Clicar no link completo de confirmação (deve abrir em `http://localhost:4000/...`).
+5. Fazer login em `http://localhost:4000/users/log-in`.
+6. Entrar em `http://localhost:4000/dashboard` e observar atualização em tempo real.
+
+### 2) Abrir as páginas no navegador (URLs completas)
 
 Com o container rodando, abra:
 
 - Registro: `http://localhost:4000/users/register`
 - Login: `http://localhost:4000/users/log-in`
 - Dashboard (requer login): `http://localhost:4000/dashboard`
+- Mailbox para confirmação de conta: `http://localhost:4000/dev/mailbox`
 
 Fluxo esperado:
 - Se você acessar `/dashboard` sem estar autenticado, você será redirecionado para `/users/log-in`.
 
-### 3) Criar um usuário (registro)
+### 3) Criar conta + confirmar e-mail (sem SMTP externo)
 
 1. Acesse `http://localhost:4000/users/register`
 2. Preencha **Email** e **Password**
 3. Envie o formulário
+4. Abra `http://localhost:4000/dev/mailbox`
+5. Localize o e-mail "Confirmation instructions"
+6. Clique no link de confirmação completo
 
-Depois disso, você consegue fazer login normalmente.
+Depois da confirmação, a conta está pronta para login.
 
-### 4) Fazer login
+Detalhes importantes desse fluxo:
+- o sistema usa `phx.gen.auth` com token assinado e expiração;
+- em execução local Docker, a entrega de e-mail usa mailbox interno (`/dev/mailbox`);
+- sem confirmação, o login por senha pode não liberar acesso total dependendo do estado da conta.
+
+### 4) Fazer login e acessar o dashboard
 
 1. Acesse `http://localhost:4000/users/log-in`
 2. Use o mesmo **Email** e **Password** do registro
@@ -218,7 +241,29 @@ Depois disso, você consegue fazer login normalmente.
 
 Você será redirecionado e conseguirá acessar o dashboard.
 
-### 5) Teste rápido de rotas (smoke test)
+### 5) Verificando carga em tempo real no dashboard
+
+Com o `w_core_loadgen` ativo, o dashboard deve começar a mostrar máquinas em poucos segundos.
+
+- URL: `http://localhost:4000/dashboard`
+- Comportamento esperado:
+  - cards de máquinas aparecem automaticamente;
+  - status alterna entre `ok`, `warning` e `critical`;
+  - contadores aumentam continuamente.
+
+Para pausar somente a carga:
+
+```bash
+docker compose stop w_core_loadgen
+```
+
+Para retomar a carga:
+
+```bash
+docker compose start w_core_loadgen
+```
+
+### 6) Teste rápido de rotas (smoke test)
 
 Este projeto inclui um script que:
 - builda a imagem
@@ -233,7 +278,7 @@ Este projeto inclui um script que:
 Observação importante:
 - Se você estiver com `docker compose up` rodando na porta `4000`, o smoke test **não conflita**, porque ele escolhe uma porta aleatória livre.
 
-### 6) Configuração de `SECRET_KEY_BASE` (produção)
+### 7) Configuração de `SECRET_KEY_BASE`
 
 O `SECRET_KEY_BASE` precisa ter **pelo menos 64 bytes**, senão o Plug/Phoenix retorna erro ao tentar usar sessão/cookies.
 
@@ -243,6 +288,27 @@ No `docker-compose.yml` já existe um fallback seguro, mas para algo mais “pro
 export SECRET_KEY_BASE="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
 docker compose up --build
 ```
+
+---
+
+## Troubleshooting rápido
+
+### Não chega e-mail de confirmação
+
+- Em Docker local, o e-mail não vai para caixa real; abra `http://localhost:4000/dev/mailbox`.
+- Se `/dev/mailbox` não abrir, confirme que `ENABLE_MAILBOX=true` está no `docker-compose.yml`.
+
+### Link abre em host/porta errados
+
+- O link deve apontar para `http://localhost:4000`.
+- Se necessário, ajuste variáveis de runtime: `PHX_HOST`, `PHX_SCHEME`, `PHX_URL_PORT`.
+
+### Dashboard sem dados
+
+- Verifique se o serviço `w_core_loadgen` está ativo:
+  - `docker compose ps`
+- Se estiver parado:
+  - `docker compose start w_core_loadgen`
 
 ---
 

@@ -17,6 +17,10 @@ defmodule WCoreWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :mailbox_enabled do
+    plug WCoreWeb.Plugs.EnsureMailboxEnabled
+  end
+
   # Endpoints do sensor/edge device.
   scope "/api", WCoreWeb do
     pipe_through :api
@@ -35,21 +39,9 @@ defmodule WCoreWeb.Router do
   #   pipe_through :api
   # end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
-  if Application.compile_env(:w_core, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
-    import Phoenix.LiveDashboard.Router
-
-    scope "/dev" do
-      pipe_through :browser
-
-      live_dashboard "/dashboard", metrics: WCoreWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
-    end
+  scope "/dev" do
+    pipe_through [:browser, :mailbox_enabled]
+    forward "/mailbox", Plug.Swoosh.MailboxPreview
   end
 
   ## Authentication routes

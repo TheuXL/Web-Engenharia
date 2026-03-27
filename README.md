@@ -35,6 +35,35 @@ graph TB
 
 ---
 
+---
+
+## Guia Passo a Passo: Acessando o Dashboard
+
+O sistema conta com um serviço auxiliar chamado **`w_core_loadgen`**. 
+> **Nota Importante:** O `w_core_loadgen` serve **exclusivamente para simular a carga de máquinas**. Ele emula milhares de sensores enviando dados para a API, permitindo que o avaliador veja o Dashboard reagindo em tempo real sem a necessidade de disparar comandos manuais.
+
+### 1. Registro de Operador
+Acesse `http://localhost:4000/users/register` para criar sua conta de acesso à Planta 42.
+
+![Registro](docs/Imagens/Register.png)
+
+### 2. Confirmação de E-mail (Ambiente Dev/Local)
+Como o sistema roda em ambiente isolado, os e-mails são capturados pelo Swoosh Mailbox. Acesse `http://localhost:4000/dev/mailbox` para visualizar o link de confirmação.
+
+![Mailbox](docs/Imagens/mailbox.png)
+
+### 3. Ativação da Conta
+Clique no link de confirmação enviado para validar seu acesso.
+
+![Confirmar Email](docs/Imagens/Confirmar-email.png)
+
+### 4. Dashboard em Tempo Real
+Após o login, acesse `http://localhost:4000/dashboard`. Graças ao `w_core_loadgen`, você verá os cards das máquinas atualizando status e contagem de eventos instantaneamente via PubSub e ETS.
+
+![Dashboard](docs/Imagens/Dashboard.png)
+
+---
+
 ## Estrutura do projeto
 
 ```
